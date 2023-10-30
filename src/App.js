@@ -2,9 +2,10 @@ import logo from './logo.svg';
 import './App.css';
 import Web3Modal from "web3modal";
 import { useEffect } from 'react';
+import { ethers } from "ethers";
 
 const web3Modal = new Web3Modal({
-  network: "rinkeby",
+  network: "SepoliaETH",
   providerOptions: {}
 });
 
@@ -12,7 +13,14 @@ function App() {
   useEffect(() => {
     async function init() {
       const instance = await web3Modal.connect();
-      console.log(instance)
+      const provider = new ethers.BrowserProvider(instance);
+      const signer = await provider.getSigner();
+      const address = await signer.getAddress();
+      const balance = await provider.getBalance(address);
+      console.log(ethers.formatEther(balance) + " ETH"); // this is big number
+      
+      // const ensAddress = await provider.lookupAddress(address);
+      // console.log(ensAddress); // only available in mainnet
     }
     init()
   }, [])
