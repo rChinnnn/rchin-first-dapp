@@ -1,7 +1,21 @@
 import logo from './logo.svg';
 import './App.css';
+import Web3Modal from "web3modal";
+import { useEffect } from 'react';
+
+const web3Modal = new Web3Modal({
+  network: "rinkeby",
+  providerOptions: {}
+});
 
 function App() {
+  useEffect(() => {
+    async function init() {
+      const instance = await web3Modal.connect();
+      console.log(instance)
+    }
+    init()
+  }, [])
   return (
     <div className="App">
       <header className="App-header">
