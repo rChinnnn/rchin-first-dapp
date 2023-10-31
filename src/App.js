@@ -1,15 +1,23 @@
 import logo from './logo.svg';
 import './App.css';
 import Web3Modal from "web3modal";
-import { useEffect } from 'react';
+import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 
 const web3Modal = new Web3Modal({
-  network: "SepoliaETH",
+  network: "sepolia",
   providerOptions: {}
 });
 
 function App() {
+  const [contract, setContract] = useState(null)
+  const [address, setAddress] = useState("0x0")
+  const [balance, setBalance] = useState("0")
+  // const [ensAddress, setEnsAddress] = useState("0")
+  const [message, setMessage] = useState("")
+  const [paidMsg, setPaidMsg] = useState("")
+  const [inputMsg, setInputMsg] = useState("")
+
   useEffect(() => {
     async function init() {
       const instance = await web3Modal.connect();
@@ -17,10 +25,13 @@ function App() {
       const signer = await provider.getSigner();
       const address = await signer.getAddress();
       const balance = await provider.getBalance(address);
-      console.log(ethers.formatEther(balance) + " ETH"); // this is big number
-      
+      setAddress(address)
+      setBalance(ethers.formatEther(balance))
+
       // const ensAddress = await provider.lookupAddress(address);
       // console.log(ensAddress); // only available in mainnet
+      // setEnsAddress(ensAddress)
+
       const contractAddr = '0xC080004ea96f2daeDCE1C0d7E81B3526C120f721'
       const abi = [
         {
@@ -77,36 +88,53 @@ function App() {
         }
       ]
       const contract = new ethers.Contract(contractAddr, abi, signer);
-      let tx = await contract.store("Free fish!")
-      await tx.wait()
-      let msg = await contract.message()
-      console.log(msg)
+      setContract(contract)
 
-      let payEtherAmount = ethers.parseEther("0.00001");
-      let ptx = await contract.storePaidMsg(
-        "Paid fish!",
-        {value: payEtherAmount}
-      )
-      let response = await ptx.wait()
-      console.log(response)
+      let msg = await contract.message()
+      let paidMsg = await contract.retrievePaidMsg()
+      setMessage(msg)
+      setPaidMsg(paidMsg)
     }
     init()
   }, [])
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
+        <p>Hi {address} !</p>
+        <p>Your balance is {balance} ETH.</p>
+        <p>Your message is {message}.</p>
+        <p>Your paid message is {paidMsg}.</p>
+
+        <input value={inputMsg} onChange={e => setInputMsg(e.target.value)} />
+        <button
+          onClick={() => {
+            async function storeFunction() {
+              let tx = await contract.store(inputMsg)
+              await tx.wait()
+
+              let _msg = await contract.message()
+              setMessage(_msg)
+            }
+            storeFunction()
+          }}
         >
-          Learn React
-        </a>
+          store msg
+        </button>
+        <button
+          onClick={() => {
+            async function storePaidFunction() {
+              let payEtherAmount = ethers.parseEther("0.00001");
+              let ptx = await contract.storePaidMsg(inputMsg, {value: payEtherAmount})
+              await ptx.wait()
+
+              let _paidMsg = await contract.retrievePaidMsg()
+              setPaidMsg(_paidMsg)
+            }
+            storePaidFunction()
+          }}
+        >
+          store paid msg
+        </button>
       </header>
     </div>
   );
